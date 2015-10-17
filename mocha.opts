@@ -1,0 +1,2 @@
+--require ./mocha_es6.js
+--reporter spec

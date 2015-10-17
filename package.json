@@ -1,0 +1,47 @@
+{
+  "name": "node-local-auth",
+  "version": "0.1.0",
+  "description": "Framework agnostic library for secure username/email/password authentication including registration and password management",
+  "main": "lib/index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "mocha --harmony --opts mocha.opts \"tests/**/*Tests.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emertechie/node-local-auth.git"
+  },
+  "keywords": [
+    "node",
+    "auth",
+    "authentication",
+    "username",
+    "password",
+    "local",
+    "logon",
+    "security",
+    "secure"
+  ],
+  "author": "emertechie@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/emertechie/node-local-auth/issues"
+  },
+  "homepage": "https://github.com/emertechie/node-local-auth#readme",
+  "dependencies": {
+    "co": "^4.6.0",
+    "debug": "^2.2.0",
+    "extend-error": "0.0.2",
+    "joi": "^6.9.1",
+    "lodash.merge": "^3.3.2",
+    "node-uuid": "^1.4.3"
+  },
+  "devDependencies": {
+    "chai": "^3.3.0",
+    "chai-shallow-deep-equal": "^1.3.0",
+    "lodash": "^3.10.1",
+    "mocha": "^2.3.3"
+  }
+}
