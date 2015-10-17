@@ -1,8 +1,3 @@
-node-local-auth
-===============
-
-Framework agnostic library for secure username/email/password authentication including registration and password management
-
 ## Overview
 
 WIP. Docs to come
