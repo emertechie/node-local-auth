@@ -12,6 +12,7 @@ const Registration = require('../lib/registration');
 const ValidationError = require('../lib/errors/validationError');
 const DuplicateRegistrationError = require('../lib/errors/duplicateRegistrationError');
 const _ = require('lodash');
+const testUtils = require('./testUtils');
 
 describe('Registration', () => {
 
@@ -206,7 +207,7 @@ describe('Registration', () => {
             it('requires email address when verifying email', function *() {
                 const email = '';
 
-                const err = yield assertThrows(function *() {
+                const err = yield testUtils.assertThrows(function *() {
                     yield sut.verifyEmail(email, 'the-token');
                 });
 
@@ -216,7 +217,7 @@ describe('Registration', () => {
             it('requires token address when verifying email', function *() {
                 const token = '';
 
-                const err = yield assertThrows(function *() {
+                const err = yield testUtils.assertThrows(function *() {
                     yield sut.verifyEmail('foo@example.com', token);
                 });
 
@@ -228,7 +229,7 @@ describe('Registration', () => {
 
                 const verifyParams = yield registerUserAndGetVerifyParams();
 
-                const err = yield assertThrows(function *() {
+                const err = yield testUtils.assertThrows(function *() {
                     yield sut.verifyEmail(verifyParams.email, invalidToken);
                 });
 
@@ -243,7 +244,7 @@ describe('Registration', () => {
                 // Clear all users:
                 userStoreFake.users.length = 0;
 
-                const err = yield assertThrows(function *() {
+                const err = yield testUtils.assertThrows(function *() {
                     yield sut.verifyEmail(verifyParams.email, verifyParams.token);
                 });
 
@@ -319,21 +320,10 @@ describe('Registration', () => {
         });
 
         it('attempting to unregister when not logged in will throw an AuthenticationError', function*() {
-            const err = yield assertThrows(function *() {
+            const err = yield testUtils.assertThrows(function *() {
                 yield sut.unregister();
             });
             assert.equal(err.message, 'Unauthenticated')
         });
     });
 });
-
-function *assertThrows(generatorFn) {
-    let err;
-    try {
-        yield generatorFn();
-    } catch (e) {
-        err = e;
-    }
-    assert.ok(err, 'Throws exception');
-    return err;
-}

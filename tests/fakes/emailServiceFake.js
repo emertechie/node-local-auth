@@ -1,29 +1,33 @@
 'use strict';
 
-/*
-module.exports = {
-    sendForgotPasswordEmail: function(user, token, cb) {
-        cb(null);
-    },
-    sendForgotPasswordNotificationForUnregisteredEmail: function(email, cb) {
-        cb(null);
-    },
-    sendPasswordSuccessfullyResetEmail: function(user, cb) {
-        cb(null);
-    },
-    sendPasswordSuccessfullyChangedEmail: function(user, cb) {
-        cb(null);
-    }
-};*/
-
 class EmailServiceFake {
     constructor() {
         this.calls = {
-            sendRegistrationEmail: []
+            sendRegistrationEmail: [],
+            sendForgotPasswordEmail: [],
+            handleForgotPasswordForUnregisteredEmail: [],
+            sendPasswordSuccessfullyResetEmail: [],
+            sendPasswordSuccessfullyChangedEmail: []
         };
     }
     sendRegistrationEmail(userDetails, verifyParams) {
         this.calls.sendRegistrationEmail.push([userDetails, verifyParams]);
+        return Promise.resolve();
+    }
+    sendForgotPasswordEmail(user, token) {
+        this.calls.sendForgotPasswordEmail.push([user, token]);
+        return Promise.resolve();
+    }
+    handleForgotPasswordForUnregisteredEmail(email) {
+        this.calls.handleForgotPasswordForUnregisteredEmail.push([email]);
+        return Promise.resolve();
+    }
+    sendPasswordSuccessfullyResetEmail(user) {
+        this.calls.sendPasswordSuccessfullyResetEmail.push([user]);
+        return Promise.resolve();
+    }
+    sendPasswordSuccessfullyChangedEmail(user) {
+        this.calls.sendPasswordSuccessfullyChangedEmail.push([user]);
         return Promise.resolve();
     }
 }
