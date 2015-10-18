@@ -66,7 +66,7 @@ describe('Forgot Password', () => {
             const email = '';
 
             const err = yield testUtils.assertThrows(function *() {
-                yield sut.requestReset(email);
+                yield sut.requestPasswordReset(email);
             });
 
             assert.equal(err.message, 'Valid email address required');
@@ -76,7 +76,7 @@ describe('Forgot Password', () => {
             yield registerUser(existingUserEmail, existingUserPassword);
             assert.equal(emailServiceFake.calls.sendForgotPasswordEmail.length, 0, 'no calls yet');
 
-            yield sut.requestReset(existingUserEmail);
+            yield sut.requestPasswordReset(existingUserEmail);
 
             assert.equal(emailServiceFake.calls.sendForgotPasswordEmail.length, 1, 'forgot password email sent');
             const callArgs = emailServiceFake.calls.sendForgotPasswordEmail[0];
@@ -89,7 +89,7 @@ describe('Forgot Password', () => {
             yield registerUser('foo@example.com', existingUserPassword);
             assert.equal(emailServiceFake.calls.sendForgotPasswordEmail.length, 0, 'no calls yet');
 
-            yield sut.requestReset('FoO@EXAMPLE.com');
+            yield sut.requestPasswordReset('FoO@EXAMPLE.com');
 
             assert.equal(emailServiceFake.calls.sendForgotPasswordEmail.length, 1, 'forgot password email sent');
             const callArgs = emailServiceFake.calls.sendForgotPasswordEmail[0];
@@ -100,7 +100,7 @@ describe('Forgot Password', () => {
             yield registerUser('foo@example.com', existingUserPassword);
             assert.equal(emailServiceFake.calls.handleForgotPasswordForUnregisteredEmail.length, 0, 'no calls yet');
 
-            yield sut.requestReset('unknown@example.com');
+            yield sut.requestPasswordReset('unknown@example.com');
 
             assert.equal(emailServiceFake.calls.handleForgotPasswordForUnregisteredEmail.length, 1, 'handled unknown email');
             const callArgs = emailServiceFake.calls.handleForgotPasswordForUnregisteredEmail[0];
@@ -111,7 +111,7 @@ describe('Forgot Password', () => {
             yield registerUser(existingUserEmail, existingUserPassword);
             assert.lengthOf(passwordResetTokenStoreFake.tokens, 0, 'no stored token yet');
 
-            yield sut.requestReset(existingUserEmail);
+            yield sut.requestPasswordReset(existingUserEmail);
 
             assert.lengthOf(passwordResetTokenStoreFake.tokens, 1, 'stores token');
 
@@ -125,7 +125,7 @@ describe('Forgot Password', () => {
         it('ensures password reset token does not contain any user identifiers to prevent guessing', function *() {
             const email = 'user@example.com';
             yield registerUser(email, existingUserPassword);
-            yield sut.requestReset(email);
+            yield sut.requestPasswordReset(email);
 
             const user = userStoreFake.users[0];
             assert.equal(user.id, 'User#1');
@@ -141,12 +141,12 @@ describe('Forgot Password', () => {
 
         it('deletes any pending reset tokens for same email on receipt of a new password reset request', function *() {
             yield registerUser(existingUserEmail, existingUserPassword);
-            yield sut.requestReset(existingUserEmail);
+            yield sut.requestPasswordReset(existingUserEmail);
 
             assert.lengthOf(passwordResetTokenStoreFake.tokens, 1);
             assert.equal(passwordResetTokenStoreFake.tokens[0].tokenId, 'Token#1');
 
-            yield sut.requestReset(existingUserEmail);
+            yield sut.requestPasswordReset(existingUserEmail);
 
             assert.lengthOf(passwordResetTokenStoreFake.tokens, 1);
             assert.equal(passwordResetTokenStoreFake.tokens[0].tokenId, 'Token#2');
@@ -170,7 +170,7 @@ describe('Forgot Password', () => {
             assert.isFalse(userStoreFake.users[0].emailVerified, 'emailVerified is false');
 
             const err = yield testUtils.assertThrows(function *() {
-                yield sut.requestReset(existingUserEmail);
+                yield sut.requestPasswordReset(existingUserEmail);
             });
 
             assert.equal(err.message, 'Please verify your email address first by clicking on the link in the registration email');
@@ -186,7 +186,7 @@ describe('Forgot Password', () => {
             // TODO: use proper call here
             userStoreFake.users[0].emailVerified = true;
 
-            yield sut.requestReset(existingUserEmail);
+            yield sut.requestPasswordReset(existingUserEmail);
 
             assert.equal(emailServiceFake.calls.sendForgotPasswordEmail.length, 1, 'forgot password email sent');
             const callArgs = emailServiceFake.calls.sendForgotPasswordEmail[0];
@@ -201,7 +201,7 @@ describe('Forgot Password', () => {
         beforeEach(function *() {
             // Set up existing pwd reset request and capture token:
             yield registerUser(existingUserEmail, existingUserPassword);
-            yield sut.requestReset(existingUserEmail);
+            yield sut.requestPasswordReset(existingUserEmail);
 
             assert.equal(emailServiceFake.calls.sendForgotPasswordEmail.length, 1, 'forgot password email sent');
             const callArgs = emailServiceFake.calls.sendForgotPasswordEmail[0];
@@ -213,7 +213,7 @@ describe('Forgot Password', () => {
             const token = 'foo';
 
             const err = yield testUtils.assertThrows(function *() {
-                yield sut.assertTokenValid(email, token);
+                yield sut.assertPasswordResetTokenValid(email, token);
             });
 
             assert.equal(err.message, 'Valid email address required');
@@ -223,7 +223,7 @@ describe('Forgot Password', () => {
             const token = '';
 
             const err = yield testUtils.assertThrows(function *() {
-                yield sut.assertTokenValid(existingUserEmail, token);
+                yield sut.assertPasswordResetTokenValid(existingUserEmail, token);
             });
 
             assert.equal(err.message, 'Password reset token required');
@@ -233,7 +233,7 @@ describe('Forgot Password', () => {
             const token = 'unknown';
 
             const err = yield testUtils.assertThrows(function *() {
-                yield sut.assertTokenValid(existingUserEmail, token);
+                yield sut.assertPasswordResetTokenValid(existingUserEmail, token);
             });
 
             assert.equal(err.message, 'Unknown or expired token');
@@ -245,18 +245,18 @@ describe('Forgot Password', () => {
             passwordResetTokenStoreFake.tokens[0].expiry = new Date(Date.now() - 1);
 
             const err = yield testUtils.assertThrows(function *() {
-                yield sut.assertTokenValid(existingUserEmail, passwordResetToken);
+                yield sut.assertPasswordResetTokenValid(existingUserEmail, passwordResetToken);
             });
 
             assert.equal(err.message, 'Unknown or expired token');
         });
 
         it('does not throw if password reset token is valid', function *() {
-            yield sut.assertTokenValid(existingUserEmail, passwordResetToken);
+            yield sut.assertPasswordResetTokenValid(existingUserEmail, passwordResetToken);
         });
 
         it('ignores email case when checking if password reset token is valid', function *() {
-            yield sut.assertTokenValid(existingUserEmail.toUpperCase(), passwordResetToken);
+            yield sut.assertPasswordResetTokenValid(existingUserEmail.toUpperCase(), passwordResetToken);
         });
     });
 
@@ -269,7 +269,7 @@ describe('Forgot Password', () => {
         beforeEach(function *() {
             // Set up existing pwd reset request and capture token:
             yield registerUser(existingUserEmail, existingUserPassword);
-            yield sut.requestReset(existingUserEmail);
+            yield sut.requestPasswordReset(existingUserEmail);
 
             assert.equal(emailServiceFake.calls.sendForgotPasswordEmail.length, 1, 'forgot password email sent');
             const callArgs = emailServiceFake.calls.sendForgotPasswordEmail[0];
