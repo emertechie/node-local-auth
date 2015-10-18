@@ -5,7 +5,6 @@ const chai = require('chai');
 const assert = chai.assert;
 const UserStoreFake = require('./fakes/userStoreFake');
 const TokenStoreFake = require('./fakes/tokenStoreFake');
-const AuthServiceFake = require('./fakes/authServiceFake');
 const EmailServiceFake = require('./fakes/emailServiceFake');
 const hashAlgoFake = require('./fakes/hashAlgoFake');
 const Registration = require('../lib/registration');
@@ -22,14 +21,12 @@ describe('Registration', () => {
 
     let userStoreFake;
     let tokenStoreFake;
-    let authServiceFake;
     let emailServiceFake;
 
     let sut;
     beforeEach(() => {
         userStoreFake = new UserStoreFake();
         tokenStoreFake = new TokenStoreFake();
-        authServiceFake = new AuthServiceFake();
         emailServiceFake = new EmailServiceFake();
 
         sut = createSut();
@@ -39,7 +36,6 @@ describe('Registration', () => {
         const opts = _.merge({
             userStore: userStoreFake,
             userIdGetter: UserStoreFake.userIdGetter,
-            authService: authServiceFake,
             tokenStore: tokenStoreFake,
             hashAlgo: hashAlgoFake,
             emailService: emailServiceFake
@@ -48,7 +44,6 @@ describe('Registration', () => {
         return new Registration(
             opts.userStore,
             opts.userIdGetter,
-            opts.authService,
             opts.tokenStore,
             opts.hashAlgo,
             opts.emailService,
@@ -127,15 +122,6 @@ describe('Registration', () => {
                 hashedPassword: 'hashed:the-password',
                 id: "User#1"
             });
-        });
-
-        it('should use auth service to log user in after registration', function *() {
-            assert.notOk(authServiceFake.loggedInUser, 'no user logged in');
-
-            yield sut.register('foo@example.com', 'the-password');
-
-            assert.ok(authServiceFake.loggedInUser, 'user logged in');
-            assert.equal(authServiceFake.loggedInUser.email, 'foo@example.com');
         });
 
         it('should prevent same user registering more than once', function *() {
@@ -300,30 +286,23 @@ describe('Registration', () => {
 
     describe('User Unregistration', () => {
 
-        it('should log existing user out when unregistering', function *() {
-            // Set up existing user:
-            yield sut.register('foo@example.com', 'the-password');
-            assert.equal(authServiceFake.loggedInUser.email, 'foo@example.com', 'User currently logged in');
-
-            yield sut.unregister();
-
-            assert.notOk(authServiceFake.loggedInUser, 'User logged out');
+        it('attempting to unregister when not logged in will throw an AuthenticationError', function*() {
+            const loggedInUserId = null;
+            const err = yield testUtils.assertThrows(function *() {
+                yield sut.unregister(loggedInUserId);
+            });
+            assert.equal(err.message, 'Unauthenticated')
         });
 
         it('should remove existing user from userStore when unregistering', function *() {
             assert.lengthOf(userStoreFake.users, 0, 'No user registered yet');
-            yield sut.register('foo@example.com', 'the-password');
+            const user = yield sut.register('foo@example.com', 'the-password');
             assert.lengthOf(userStoreFake.users, 1, 'User registered');
 
-            yield sut.unregister();
-            assert.lengthOf(userStoreFake.users, 0, 'User removed');
-        });
+            const loggedInUserId = UserStoreFake.userIdGetter(user);
+            yield sut.unregister(loggedInUserId);
 
-        it('attempting to unregister when not logged in will throw an AuthenticationError', function*() {
-            const err = yield testUtils.assertThrows(function *() {
-                yield sut.unregister();
-            });
-            assert.equal(err.message, 'Unauthenticated')
+            assert.lengthOf(userStoreFake.users, 0, 'User removed');
         });
     });
 });

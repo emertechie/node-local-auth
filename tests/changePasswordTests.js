@@ -4,7 +4,6 @@ const chai = require('chai');
 const assert = chai.assert;
 const UserStoreFake = require('./fakes/userStoreFake');
 const TokenStoreFake = require('./fakes/tokenStoreFake');
-const AuthServiceFake = require('./fakes/authServiceFake');
 const EmailServiceFake = require('./fakes/emailServiceFake');
 const hashAlgoFake = require('./fakes/hashAlgoFake');
 const Registration = require('../lib/registration');
@@ -16,7 +15,6 @@ describe('Change Password', () => {
     let userStoreFake;
     let verifyEmailTokenStoreFake;
     let passwordResetTokenStoreFake;
-    let authServiceFake;
     let emailServiceFake;
     let registration;
 
@@ -25,24 +23,24 @@ describe('Change Password', () => {
     const ValidNewPassword = 'password';
 
     let sut;
+    let loggedInUserId;
 
     beforeEach(function*() {
         userStoreFake = new UserStoreFake();
         verifyEmailTokenStoreFake = new TokenStoreFake();
         passwordResetTokenStoreFake = new TokenStoreFake();
-        authServiceFake = new AuthServiceFake();
         emailServiceFake = new EmailServiceFake();
 
         sut = createSut();
 
-        yield registerUser(existingUserEmail, existingUserPassword);
+        const user = yield registerUser(existingUserEmail, existingUserPassword);
+        loggedInUserId = UserStoreFake.userIdGetter(user);
     });
 
     function createSut(options, services) {
         const opts = _.merge({
             userStore: userStoreFake,
             userIdGetter: UserStoreFake.userIdGetter,
-            authService: authServiceFake,
             verifyEmailTokenStore: verifyEmailTokenStoreFake,
             passwordResetTokenStore: passwordResetTokenStoreFake,
             hashAlgo: hashAlgoFake,
@@ -52,7 +50,6 @@ describe('Change Password', () => {
         registration = new Registration(
             opts.userStore,
             opts.userIdGetter,
-            opts.authService,
             opts.verifyEmailTokenStore,
             opts.hashAlgo,
             opts.emailService,
@@ -62,17 +59,16 @@ describe('Change Password', () => {
         return new ChangePassword(
             opts.userStore,
             opts.userIdGetter,
-            opts.authService,
             opts.hashAlgo,
             opts.emailService,
             options);
     }
 
     it('ensures user is logged in', function *() {
-        authServiceFake.logOut();
+        const loggedInUserId = null;
 
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(existingUserPassword, ValidNewPassword, ValidNewPassword);
+            yield sut.changePassword(loggedInUserId, existingUserPassword, ValidNewPassword, ValidNewPassword);
         });
 
         assert.equal(err.message, 'Unauthenticated');
@@ -81,7 +77,7 @@ describe('Change Password', () => {
     it('requires existing password', function *() {
         const existingPassword = '';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(existingPassword, ValidNewPassword, ValidNewPassword);
+            yield sut.changePassword(loggedInUserId, existingPassword, ValidNewPassword, ValidNewPassword);
         });
 
         assert.equal(err.message, 'Old password required');
@@ -90,7 +86,7 @@ describe('Change Password', () => {
     it('requires new password', function *() {
         const newPassword = '';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(existingUserPassword, newPassword, ValidNewPassword);
+            yield sut.changePassword(loggedInUserId, existingUserPassword, newPassword, ValidNewPassword);
         });
 
         assert.equal(err.message, 'New password required');
@@ -99,7 +95,7 @@ describe('Change Password', () => {
     it('requires new password confirmation', function *() {
         const newConfirmPassword = '';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(existingUserPassword, ValidNewPassword, newConfirmPassword);
+            yield sut.changePassword(loggedInUserId, existingUserPassword, ValidNewPassword, newConfirmPassword);
         });
 
         assert.equal(err.message, 'New password confirmation required');
@@ -109,29 +105,16 @@ describe('Change Password', () => {
         const newPassword = 'foo';
         const newConfirmPassword = 'bar';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(existingUserPassword, newPassword, newConfirmPassword);
+            yield sut.changePassword(loggedInUserId, existingUserPassword, newPassword, newConfirmPassword);
         });
 
         assert.equal(err.message, 'New password and confirm password do not match');
     });
 
-    it('throws if original user cannot be found', function *() {
-        // could only ever happen if user deleted in another browser session just before change pwd
-
-        // Simulate deleting user
-        userStoreFake.users.length = 0;
-
-        const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(existingUserPassword, ValidNewPassword, ValidNewPassword);
-        });
-
-        assert.equal(err.message, 'Could not find user');
-    });
-
     it('forbids password change given incorrect existing password', function *() {
         const incorrectPwd = existingUserPassword + 'X';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(incorrectPwd, ValidNewPassword, ValidNewPassword);
+            yield sut.changePassword(loggedInUserId, incorrectPwd, ValidNewPassword, ValidNewPassword);
         });
 
         assert.equal(err.message, 'Incorrect password');
@@ -140,7 +123,7 @@ describe('Change Password', () => {
     it('allows changing password given correct existing password', function *() {
         assert.lengthOf(userStoreFake.users, 1, '1 user registered');
 
-        yield sut.changePassword(existingUserPassword, 'new-password', 'new-password');
+        yield sut.changePassword(loggedInUserId, existingUserPassword, 'new-password', 'new-password');
 
         assert.lengthOf(userStoreFake.users, 1, 'Still 1 user registered');
         const user = userStoreFake.users[0];
@@ -150,7 +133,7 @@ describe('Change Password', () => {
     it('emails user when password changed', function *() {
         assert.lengthOf(emailServiceFake.calls.sendPasswordSuccessfullyChangedEmail, 0);
 
-        yield sut.changePassword(existingUserPassword, 'new-password', 'new-password');
+        yield sut.changePassword(loggedInUserId, existingUserPassword, 'new-password', 'new-password');
 
         assert.lengthOf(emailServiceFake.calls.sendPasswordSuccessfullyChangedEmail, 1);
         const args = emailServiceFake.calls.sendPasswordSuccessfullyChangedEmail[0];
@@ -159,6 +142,6 @@ describe('Change Password', () => {
     });
 
     function *registerUser(email, password) {
-        yield registration.register(email, password);
+        return yield registration.register(email, password);
     }
 });

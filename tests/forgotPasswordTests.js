@@ -4,7 +4,6 @@ const chai = require('chai');
 const assert = chai.assert;
 const UserStoreFake = require('./fakes/userStoreFake');
 const TokenStoreFake = require('./fakes/tokenStoreFake');
-const AuthServiceFake = require('./fakes/authServiceFake');
 const EmailServiceFake = require('./fakes/emailServiceFake');
 const hashAlgoFake = require('./fakes/hashAlgoFake');
 const Registration = require('../lib/registration');
@@ -28,7 +27,6 @@ describe('Forgot Password', () => {
         userStoreFake = new UserStoreFake();
         verifyEmailTokenStoreFake = new TokenStoreFake();
         passwordResetTokenStoreFake = new TokenStoreFake();
-        authServiceFake = new AuthServiceFake();
         emailServiceFake = new EmailServiceFake();
 
         sut = createSut();
@@ -38,7 +36,6 @@ describe('Forgot Password', () => {
         const opts = _.merge({
             userStore: userStoreFake,
             userIdGetter: UserStoreFake.userIdGetter,
-            authService: authServiceFake,
             verifyEmailTokenStore: verifyEmailTokenStoreFake,
             passwordResetTokenStore: passwordResetTokenStoreFake,
             hashAlgo: hashAlgoFake,
@@ -48,7 +45,6 @@ describe('Forgot Password', () => {
         registration = new Registration(
             opts.userStore,
             opts.userIdGetter,
-            opts.authService,
             opts.verifyEmailTokenStore,
             opts.hashAlgo,
             opts.emailService,
@@ -58,7 +54,6 @@ describe('Forgot Password', () => {
         return new ForgotPassword(
             opts.userStore,
             opts.userIdGetter,
-            opts.authService,
             opts.passwordResetTokenStore,
             opts.hashAlgo,
             opts.emailService,
