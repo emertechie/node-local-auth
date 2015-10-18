@@ -15,18 +15,18 @@ class FakeUserStore {
         if (userAlreadyExists) {
             return Promise.reject(new DuplicateRegistrationError('A user with that email address already exists'));
         }
-        let user = _.clone(userData);
+        let user = _.cloneDeep(userData);
         user.id = 'User#' + (this.users.length + 1);
         this.users.push(user);
         return Promise.resolve(user);
     }
     getById(userId) {
         const found = _findById.call(this, userId);
-        return Promise.resolve(found);
+        return Promise.resolve(_.cloneDeep(found));
     }
     getByEmail(email) {
         const found = _findByEmail.call(this, email);
-        return Promise.resolve(found);
+        return Promise.resolve(_.cloneDeep(found));
     }
     update(user) {
         var userIdx = _.findIndex(this.users, candidateUser => {
@@ -37,7 +37,7 @@ class FakeUserStore {
             return Promise.reject(new Error('User not found'));
         }
 
-        var updated = _.clone(user);
+        var updated = _.cloneDeep(user);
         this.users[userIdx] = updated;
         return Promise.resolve(updated);
     }
