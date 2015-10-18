@@ -7,9 +7,6 @@ class FakeUserStore {
     constructor() {
         this.users = [];
     }
-    static get userIdGetter() {
-        return user => user.id;
-    }
     add(userData) {
         const userAlreadyExists = !!_findByEmail.call(this, userData.email);
         if (userAlreadyExists) {
@@ -20,17 +17,13 @@ class FakeUserStore {
         this.users.push(user);
         return Promise.resolve(user);
     }
-    getById(userId) {
-        const found = _findById.call(this, userId);
-        return Promise.resolve(_.cloneDeep(found));
-    }
     getByEmail(email) {
         const found = _findByEmail.call(this, email);
         return Promise.resolve(_.cloneDeep(found));
     }
     update(user) {
         var userIdx = _.findIndex(this.users, candidateUser => {
-            return FakeUserStore.userIdGetter(candidateUser) === FakeUserStore.userIdGetter(user);
+            return candidateUser.email === user.email;
         });
 
         if (userIdx === -1) {
@@ -41,9 +34,9 @@ class FakeUserStore {
         this.users[userIdx] = updated;
         return Promise.resolve(updated);
     }
-    removeById(userId) {
+    removeByEmail(email) {
         _.remove(this.users, function(user) {
-            return user.id === userId;
+            return user.email === email;
         });
         return Promise.resolve();
     }

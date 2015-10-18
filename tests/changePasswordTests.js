@@ -23,7 +23,7 @@ describe('Change Password', () => {
     const ValidNewPassword = 'password';
 
     let sut;
-    let loggedInUserId;
+    let loggedInUserEmail;
 
     beforeEach(function*() {
         userStoreFake = new UserStoreFake();
@@ -34,13 +34,12 @@ describe('Change Password', () => {
         sut = createSut();
 
         const user = yield registerUser(existingUserEmail, existingUserPassword);
-        loggedInUserId = UserStoreFake.userIdGetter(user);
+        loggedInUserEmail = user.email;
     });
 
     function createSut(options, services) {
         const opts = _.merge({
             userStore: userStoreFake,
-            userIdGetter: UserStoreFake.userIdGetter,
             verifyEmailTokenStore: verifyEmailTokenStoreFake,
             passwordResetTokenStore: passwordResetTokenStoreFake,
             hashAlgo: hashAlgoFake,
@@ -49,7 +48,6 @@ describe('Change Password', () => {
 
         registration = new Registration(
             opts.userStore,
-            opts.userIdGetter,
             opts.verifyEmailTokenStore,
             opts.hashAlgo,
             opts.emailService,
@@ -58,17 +56,16 @@ describe('Change Password', () => {
 
         return new ChangePassword(
             opts.userStore,
-            opts.userIdGetter,
             opts.hashAlgo,
             opts.emailService,
             options);
     }
 
     it('ensures user is logged in', function *() {
-        const loggedInUserId = null;
+        const loggedInUserEmail = null;
 
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(loggedInUserId, existingUserPassword, ValidNewPassword, ValidNewPassword);
+            yield sut.changePassword(loggedInUserEmail, existingUserPassword, ValidNewPassword, ValidNewPassword);
         });
 
         assert.equal(err.message, 'Unauthenticated');
@@ -77,7 +74,7 @@ describe('Change Password', () => {
     it('requires existing password', function *() {
         const existingPassword = '';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(loggedInUserId, existingPassword, ValidNewPassword, ValidNewPassword);
+            yield sut.changePassword(loggedInUserEmail, existingPassword, ValidNewPassword, ValidNewPassword);
         });
 
         assert.equal(err.message, 'Old password required');
@@ -86,7 +83,7 @@ describe('Change Password', () => {
     it('requires new password', function *() {
         const newPassword = '';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(loggedInUserId, existingUserPassword, newPassword, ValidNewPassword);
+            yield sut.changePassword(loggedInUserEmail, existingUserPassword, newPassword, ValidNewPassword);
         });
 
         assert.equal(err.message, 'New password required');
@@ -95,7 +92,7 @@ describe('Change Password', () => {
     it('requires new password confirmation', function *() {
         const newConfirmPassword = '';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(loggedInUserId, existingUserPassword, ValidNewPassword, newConfirmPassword);
+            yield sut.changePassword(loggedInUserEmail, existingUserPassword, ValidNewPassword, newConfirmPassword);
         });
 
         assert.equal(err.message, 'New password confirmation required');
@@ -105,7 +102,7 @@ describe('Change Password', () => {
         const newPassword = 'foo';
         const newConfirmPassword = 'bar';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(loggedInUserId, existingUserPassword, newPassword, newConfirmPassword);
+            yield sut.changePassword(loggedInUserEmail, existingUserPassword, newPassword, newConfirmPassword);
         });
 
         assert.equal(err.message, 'New password and confirm password do not match');
@@ -114,7 +111,7 @@ describe('Change Password', () => {
     it('forbids password change given incorrect existing password', function *() {
         const incorrectPwd = existingUserPassword + 'X';
         const err = yield testUtils.assertThrows(function *() {
-            yield sut.changePassword(loggedInUserId, incorrectPwd, ValidNewPassword, ValidNewPassword);
+            yield sut.changePassword(loggedInUserEmail, incorrectPwd, ValidNewPassword, ValidNewPassword);
         });
 
         assert.equal(err.message, 'Incorrect password');
@@ -123,7 +120,7 @@ describe('Change Password', () => {
     it('allows changing password given correct existing password', function *() {
         assert.lengthOf(userStoreFake.users, 1, '1 user registered');
 
-        yield sut.changePassword(loggedInUserId, existingUserPassword, 'new-password', 'new-password');
+        yield sut.changePassword(loggedInUserEmail, existingUserPassword, 'new-password', 'new-password');
 
         assert.lengthOf(userStoreFake.users, 1, 'Still 1 user registered');
         const user = userStoreFake.users[0];
@@ -133,7 +130,7 @@ describe('Change Password', () => {
     it('emails user when password changed', function *() {
         assert.lengthOf(emailServiceFake.calls.sendPasswordSuccessfullyChangedEmail, 0);
 
-        yield sut.changePassword(loggedInUserId, existingUserPassword, 'new-password', 'new-password');
+        yield sut.changePassword(loggedInUserEmail, existingUserPassword, 'new-password', 'new-password');
 
         assert.lengthOf(emailServiceFake.calls.sendPasswordSuccessfullyChangedEmail, 1);
         const args = emailServiceFake.calls.sendPasswordSuccessfullyChangedEmail[0];

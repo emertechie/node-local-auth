@@ -35,7 +35,6 @@ describe('Registration', () => {
     function createSut(options, services) {
         const opts = _.merge({
             userStore: userStoreFake,
-            userIdGetter: UserStoreFake.userIdGetter,
             tokenStore: tokenStoreFake,
             hashAlgo: hashAlgoFake,
             emailService: emailServiceFake
@@ -43,7 +42,6 @@ describe('Registration', () => {
 
         return new Registration(
             opts.userStore,
-            opts.userIdGetter,
             opts.tokenStore,
             opts.hashAlgo,
             opts.emailService,
@@ -287,9 +285,9 @@ describe('Registration', () => {
     describe('User Unregistration', () => {
 
         it('attempting to unregister when not logged in will throw an AuthenticationError', function*() {
-            const loggedInUserId = null;
+            const loggedInUserEmail = null;
             const err = yield testUtils.assertThrows(function *() {
-                yield sut.unregister(loggedInUserId);
+                yield sut.unregister(loggedInUserEmail);
             });
             assert.equal(err.message, 'Unauthenticated')
         });
@@ -299,8 +297,7 @@ describe('Registration', () => {
             const user = yield sut.register('foo@example.com', 'the-password');
             assert.lengthOf(userStoreFake.users, 1, 'User registered');
 
-            const loggedInUserId = UserStoreFake.userIdGetter(user);
-            yield sut.unregister(loggedInUserId);
+            yield sut.unregister(user.email);
 
             assert.lengthOf(userStoreFake.users, 0, 'User removed');
         });

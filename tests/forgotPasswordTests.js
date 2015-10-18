@@ -15,7 +15,6 @@ describe('Forgot Password', () => {
     let userStoreFake;
     let verifyEmailTokenStoreFake;
     let passwordResetTokenStoreFake;
-    let authServiceFake;
     let emailServiceFake;
     let registration;
 
@@ -35,7 +34,6 @@ describe('Forgot Password', () => {
     function createSut(options, services) {
         const opts = _.merge({
             userStore: userStoreFake,
-            userIdGetter: UserStoreFake.userIdGetter,
             verifyEmailTokenStore: verifyEmailTokenStoreFake,
             passwordResetTokenStore: passwordResetTokenStoreFake,
             hashAlgo: hashAlgoFake,
@@ -44,7 +42,6 @@ describe('Forgot Password', () => {
 
         registration = new Registration(
             opts.userStore,
-            opts.userIdGetter,
             opts.verifyEmailTokenStore,
             opts.hashAlgo,
             opts.emailService,
@@ -53,7 +50,6 @@ describe('Forgot Password', () => {
 
         return new ForgotPassword(
             opts.userStore,
-            opts.userIdGetter,
             opts.passwordResetTokenStore,
             opts.hashAlgo,
             opts.emailService,
@@ -117,7 +113,6 @@ describe('Forgot Password', () => {
 
             const tokenDetails = passwordResetTokenStoreFake.tokens[0];
             assert.equal(tokenDetails.email, existingUserEmail);
-            assert.equal(tokenDetails.userId, "User#1");
             assert.isNotNull(tokenDetails.hashedToken);
             assert.isNotNull(tokenDetails.expiry);
         });
