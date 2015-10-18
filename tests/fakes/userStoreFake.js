@@ -21,18 +21,25 @@ class FakeUserStore {
         const found = _findByEmail.call(this, email);
         return Promise.resolve(_.cloneDeep(found));
     }
-    update(user) {
+    setEmailVerified(email) {
         var userIdx = _.findIndex(this.users, candidateUser => {
-            return candidateUser.email === user.email;
+            return candidateUser.email === email;
         });
-
         if (userIdx === -1) {
             return Promise.reject(new Error('User not found'));
         }
-
-        var updated = _.cloneDeep(user);
-        this.users[userIdx] = updated;
-        return Promise.resolve(updated);
+        this.users[userIdx].emailVerified = true;
+        return Promise.resolve();
+    }
+    setHashedPassword(user, hashedPassword) {
+        var userIdx = _.findIndex(this.users, candidateUser => {
+            return candidateUser.email === user.email;
+        });
+        if (userIdx === -1) {
+            return Promise.reject(new Error('User not found'));
+        }
+        this.users[userIdx].hashedPassword = hashedPassword;
+        return Promise.resolve();
     }
     removeByEmail(email) {
         _.remove(this.users, function(user) {
@@ -55,67 +62,3 @@ function _findById(id) {
 }
 
 module.exports = FakeUserStore;
-
-
-
-
-/*
-var _ = require('lodash');
-
-function FakeUserStore() {
-    this.users = [];
-}
-
-FakeUserStore.prototype.add = function(userDetails, callback) {
-    var userAlreadyExists = !!_findByEmail.call(this, userDetails.email);
-    if (userAlreadyExists) {
-        return callback(null, userAlreadyExists);
-    }
-
-    var user = _.clone(userDetails);
-    user.id = this.fakeUserId || ('User#' + (this.users.length + 1));
-    this.users.push(user);
-    callback(null, userAlreadyExists, user);
-};
-
-FakeUserStore.prototype.get = function(userId, cb) {
-    var user = _.find(this.users, function(user) {
-        return user.id === userId;
-    });
-    cb(null, user);
-};
-
-FakeUserStore.prototype.update = function(user, callback) {
-    var userIdx = _.findIndex(this.users, function(candidateUser) {
-        return candidateUser.id === user.userId;
-    });
-
-    if (userIdx === -1) {
-        return callback(null, null);
-    }
-
-    var updated = _.clone(user);
-    this.users[userIdx] = updated;
-    return callback(null, updated);
-};
-
-FakeUserStore.prototype.remove = function(userId, callback) {
-    _.remove(this.users, function(user) {
-        return user.id === userId;
-    });
-    callback(null);
-};
-
-FakeUserStore.prototype.findByEmail = function(email, callback) {
-    var found = _findByEmail.call(this, email);
-    callback(null, found);
-};
-
-function _findByEmailSync(email) {
-    return _.find(this.users, function(user) {
-        return user.email === email;
-    });
-}
-
-module.exports = FakeUserStore;
-*/

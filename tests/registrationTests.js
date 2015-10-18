@@ -1,7 +1,7 @@
 'use strict';
 
 const chai = require('chai');
-//chai.use(require('chai-shallow-deep-equal'));
+chai.use(require('chai-shallow-deep-equal'));
 const assert = chai.assert;
 const UserStoreFake = require('./fakes/userStoreFake');
 const TokenStoreFake = require('./fakes/tokenStoreFake');
@@ -232,7 +232,7 @@ describe('Registration', () => {
                     yield sut.verifyEmail(verifyParams.email, verifyParams.token);
                 });
 
-                assert.equal(err.message, 'Unknown or invalid token');
+                assert.equal(err.message, 'User not found');
             });
 
             it('marks user email address verified given valid token', function *() {
@@ -300,6 +300,72 @@ describe('Registration', () => {
             yield sut.unregister(user.email);
 
             assert.lengthOf(userStoreFake.users, 0, 'User removed');
+        });
+    });
+
+    describe('Multi Tenant Registration', function() {
+
+        beforeEach(function() {
+            sut = createSut({
+                verifyEmail: true
+            });
+        });
+
+        it('can add a tenantId to user during registration', function *() {
+            assert.lengthOf(userStoreFake.users, 0);
+
+            yield sut.register('foo@example.com', 'the-password', 'the-username', 'tenant-1');
+
+            assert.lengthOf(userStoreFake.users, 1);
+            assert.deepEqual(userStoreFake.users[0], {
+                tenantId: 'tenant-1',
+                username: 'the-username',
+                email: 'foo@example.com',
+                emailVerified: false,
+                id: "User#1",
+                hashedPassword: 'hashed:the-password'
+            });
+        });
+
+        it('can add a tenantId to verify email token during registration', function *() {
+            assert.lengthOf(tokenStoreFake.tokens, 0);
+
+            const username = null;
+            yield sut.register('foo@example.com', 'the-password', username, 'tenant-1');
+
+            assert.lengthOf(tokenStoreFake.tokens, 1);
+            const storedTokenObj = tokenStoreFake.tokens[0];
+            assert.shallowDeepEqual(storedTokenObj, {
+                tenantId: 'tenant-1',
+                email: 'foo@example.com'
+            });
+            assert.ok(storedTokenObj.hashedToken);
+        });
+
+        it('provides tenantId when sending registration email', function *() {
+            assert.equal(emailServiceFake.calls.sendRegistrationEmail.length, 0, 'no calls yet');
+
+            yield sut.register('foo@example.com', 'the-password', 'the-username', 'tenant-1');
+
+            assert.equal(emailServiceFake.calls.sendRegistrationEmail.length, 1, 'reg email sent');
+            const verifyParams = emailServiceFake.calls.sendRegistrationEmail[0][1];
+
+            assert.equal(verifyParams.tenantId, 'tenant-1');
+            assert.equal(verifyParams.email, 'foo@example.com');
+            assert.ok(verifyParams.token, 'has a token');
+            assert.equal(verifyParams.queryString, '?email=foo@example.com&tenant=tenant-1&token=' + verifyParams.token);
+        });
+
+        describe('Verifying Email', function() {
+
+            // TODO: make sure optionalTenantId passed to all services
+
+        });
+
+        describe('Unregistering', function() {
+
+            // TODO: make sure optionalTenantId passed to all services
+
         });
     });
 });
