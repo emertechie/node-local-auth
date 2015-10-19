@@ -1,6 +1,6 @@
 {
   "name": "node-local-auth",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework agnostic library for secure username/email/password authentication including registration and password management",
   "main": "lib/index.js",
   "directories": {
